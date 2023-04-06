@@ -1,2 +1,2 @@
-# SalesSystemBack
-BackEnd de Sales System
+# SalesSystem_BackEnd
+BackEnd del proyecto SalesSystem
