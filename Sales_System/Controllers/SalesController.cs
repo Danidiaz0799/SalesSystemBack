@@ -23,20 +23,9 @@ namespace SalesSystem.ApiSale.Controllers
         [HttpGet("")]
         public async Task<ActionResult<IEnumerable<ReadSalesDTO>>> GetAllSales()
         {
-            try
-            {
-                var Sales = await _SaleService.GetAllSales();
-                var SaleResults = _mapper.Map<IEnumerable<Sale>, IEnumerable<ReadSalesDTO>>(Sales);
-                if (SaleResults.Count() == 0)
-                {
-                    return Ok("{ \"code\": \"200\", \"message\": \"No data to show.\" }");
-                }
-                return Ok(SaleResults);
-            }
-            catch (Exception ex)
-            {
-                return Ok("{ 'code': '400', 'message': 'Exception: "+ex.Message+"' }");
-            }
+            var Sales = await _SaleService.GetAllSales();
+            var SaleResults = _mapper.Map<IEnumerable<Sale>, IEnumerable<ReadSalesDTO>>(Sales);
+            return Ok(SaleResults);
         }
 
         [HttpGet("{id}")]
@@ -59,30 +48,20 @@ namespace SalesSystem.ApiSale.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult<ReadSalesDTO>> CreateSale(SaveSalesDTO newsale)
+        public async Task<ActionResult<ReadSalesDTO>> CreateSale([FromBody] SaveSalesDTO newsale)
         {
-            try
+            var validationResult = await new SaveSaleResourceValidator().ValidateAsync(newsale);
+            if (!validationResult.IsValid)
             {
-                var validator = new SaveSaleResourceValidator();
-                var validationResult = await validator.ValidateAsync(newsale);
-
-                if (!validationResult.IsValid)
-                    return BadRequest(validationResult.Errors);
-
-                var saleToCreate = _mapper.Map<SaveSalesDTO, Sale>(newsale);
-
-                var newSale = await _SaleService.CreateSale(saleToCreate);
-
-                var sale = await _SaleService.GetSaleById(newSale.SaleId);
-
-                var saleResult = _mapper.Map<Sale, ReadSalesDTO>(sale);
-
-                return Ok(saleResult);
+                return BadRequest(validationResult.Errors);
             }
-            catch (Exception ex)
-            {
-                return Ok("{ \"code\": \"400\", \"message\": \"Exception: " + ex.Message + "\" }");
-            }
+
+            var saleToCreate = _mapper.Map<SaveSalesDTO, Sale>(newsale);
+            var newSale = await _SaleService.CreateSale(saleToCreate);
+            var sale = await _SaleService.GetSaleById(newSale.SaleId);
+            var saleResult = _mapper.Map<Sale, ReadSalesDTO>(sale);
+
+            return CreatedAtAction(nameof(CreateSale), new { id = saleResult.SaleId }, saleResult);
         }
 
         [HttpPut]
